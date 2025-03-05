@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025德国及东欧旅行行程单</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #EAE0DA;
+            color: #5C5A58;
+        }
+        h1, h2 { color: #4E4A47; }
+        .day {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #B8B5B2;
+            border-radius: 8px;
+            background-color: #F2ECE4;
+        }
+        .expense-category {
+            margin-top: 10px;
+        }
+        .expense-category label {
+            display: inline-block;
+            width: 80px;
+        }
+        .notes {
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+            min-height: 50px;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #4E4A47;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #6C6865;
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // 初始化地图
+        function initMap() {
+            var map = L.map('map').setView([48.1351, 11.5820], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            var locations = [
+                {name: "德累斯顿", lat: 51.0504, lng: 13.7373},
+                {name: "布拉格", lat: 50.0755, lng: 14.4378},
+                {name: "伊斯坦布尔", lat: 41.0082, lng: 28.9784},
+                {name: "雅典", lat: 37.9878, lng: 23.7324},
+                {name: "布达佩斯", lat: 47.4979, lng: 19.0402},
+                {name: "柏林", lat: 52.5200, lng: 13.4050}
+            ];
+
+            var latlngs = locations.map(loc => [loc.lat, loc.lng]);
+
+            locations.forEach(location => {
+                L.marker([location.lat, location.lng]).addTo(map)
+                    .bindPopup(`<b>${location.name}</b>`);
+            });
+
+            L.polyline(latlngs, {color: 'red'}).addTo(map);
+        }
+
+        // 更新总支出
+        function updateTotalExpense() {
+            let totalExpense = 0;
+            document.querySelectorAll('.day').forEach(day => {
+                let accommodation = parseFloat(day.querySelector('.accommodation-input').value) || 0;
+                let transport = parseFloat(day.querySelector('.transport-input').value) || 0;
+                let play = parseFloat(day.querySelector('.play-input').value) || 0;
+                let food = parseFloat(day.querySelector('.food-input').value) || 0;
+                let shopping = parseFloat(day.querySelector('.shopping-input').value) || 0;
+                totalExpense += accommodation + transport + play + food + shopping;
+            });
+            document.getElementById('total-expense').innerText = `总支出: €${totalExpense.toFixed(2)}`;
+            saveData(); // 保存数据
+        }
+
+        // 保存数据到 localStorage
+        function saveData() {
+            let activities = [];
+            document.querySelectorAll('.day').forEach(day => {
+                let title = day.querySelector('h3').innerText;
+                let details = day.querySelector('.details').innerText;
+                let accommodation = day.querySelector('.accommodation-input').value;
+                let transport = day.querySelector('.transport-input').value;
+                let play = day.querySelector('.play-input').value;
+                let food = day.querySelector('.food-input').value;
+                let shopping = day.querySelector('.shopping-input').value;
+                let notes = day.querySelector('.notes').innerHTML;
+                activities.push({ title, details, accommodation, transport, play, food, shopping, notes });
+            });
+            let todos = Array.from(document.querySelectorAll('#todo-list li')).map(item => ({ text: item.innerText, checked: item.querySelector('input').checked }));
+            let shoppingList = Array.from(document.querySelectorAll('#shopping-list li')).map(item => ({ text: item.innerText, checked: item.querySelector('input').checked }));
+
+            localStorage.setItem('travelData', JSON.stringify(activities));
+            localStorage.setItem('todoList', JSON.stringify(todos));
+            localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+        }
+
+        // 加载数据
+        function loadData() {
+            let data = localStorage.getItem('travelData');
+            let activities = data ? JSON.parse(data) : [];
+
+            if (activities.length === 0) {
+                console.log("No saved data, using default activities...");
+                activities = [
+                    { title: "3月9日 - 柏林 → 德累斯顿", details: "交通: 🚌 FLIXBUS 柏林BER->德累斯顿Hbf\n游览计划: 📌 德累斯顿：博物馆\n购物清单: 无", accommodation: 0, transport: 58, play: 0, food: 0, shopping: 0, notes: "8:00 张导到达柏林机场接机，预计马女士出关时间1小时\n 9:25 坐上Flixbus大巴车\n 12:05 到达张导公寓安顿\n 14:00 出发去德累斯顿易北河老城区\n 18:00 晚饭 \n 20:00 回公寓收拾行李睡觉" },
+                    { title: "3月10日 - 德累斯顿 → 布拉格", details: "交通: 🚄 火车 德累斯顿Hbf->布拉格Praha hl.n. 8:10-10:26（2小时16分钟）\n 游览计划: 📌 布拉格: 自由行\n 购物清单: 冰箱贴", accommodation: 80.00, transport: 100.00, play: 20.00, food: 40.00, shopping: 30.00, notes: "" },
+                    { title: "3月11日 - 布拉格 → 伊斯坦布尔", details: "交通: ✈️ 飞机 布拉格PRG前往伊斯坦布尔SAW 09:20-13:55\n 游览计划: 📌 伊斯坦布尔：自由行\n 购物清单: 冰箱贴，香水小瓶", accommodation: 120.00, transport: 161.20, play: 80.00, food: 80.00, shopping: 50.00, notes: "" },
+                    { title: "3月12日 - 伊斯坦布尔", details: "交通: 🚌🚢 市内交通\n 游览计划: 📌 伊斯坦布尔：自由行\n 购物清单: 暂无", accommodation: 120.00, transport: 40.00, play: 200.00, food: 80.00, shopping: 70.00, notes: "" },
+                    { title: "3月13日 - 伊斯坦布尔", details: "交通: 🚌🚢 市内交通\n 游览计划: 📌 伊斯坦布尔：自由行\n 购物清单: 暂无", accommodation: 120.00, transport: 20.00, play: 200.00, food: 80.00, shopping: 50.00, notes: "" },
+                    { title: "3月14日 - 伊斯坦布尔 → 雅典", details: "交通: ✈️ 飞机 伊斯坦布尔IST前往雅典ATH 12:00-12:25（1小时25分钟）\n 游览计划: 📌 雅典：自由行\n 购物清单: 无", accommodation: 100.00, transport: 161.20, play: 80.00, food: 80.00, shopping: 50.00, notes: "" },
+                    { title: "3月15日 - 雅典", details: "交通: 🚌🚢 市内交通\n 游览计划: 📌 雅典：自由行\n 购物清单: 暂无", accommodation: 100.00, transport: 20.00, play: 80.00, food: 80.00, shopping: 30.00, notes: "" },
+                    { title: "3月16日 - 雅典 → 布达佩斯", details: "交通: ✈️ 飞机 雅典ATH前往布达佩斯BUD 05:50-07:00（2小时10分钟）\n 游览计划: 📌 布达佩斯：自由行\n 购物清单: 冰箱贴", accommodation: 100.00, transport: 148.42, play: 40.00, food: 60.00, shopping: 50.00, notes: "" },
+                    { title: "3月17日 - 布达佩斯", details: "交通: 🚌🚢 市内交通\n 游览计划: 📌 布达佩斯：自由行\n 购物清单: 暂无", accommodation: 100.00, transport: 20.00, play: 80.00, food: 80.00, shopping: 30.00, notes: "" },
+                    { title: "3月18日 - 布达佩斯 → 柏林 → 德累斯顿", details: "交通: ✈️ 飞机 布达佩斯BUD前往柏林BER 11:30-13:00（1小时30分钟） 🚄 火车 柏林前往德累斯顿Hbf 19:05-21:07（2小时2分钟）\n 游览计划: 📌 柏林：自由行，德累斯顿：自由行\n 购物清单: 冰箱贴", accommodation: 0, transport: 150.37, play: 40.00, food: 20.00, shopping: 100.00, notes: "" },
+                    { title: "3月19日 - 德累斯顿", details: "交通: 🚌 市内交通\n 游览计划: 📌 德累斯顿：小瑞士国家公园\n 购物清单: 暂无", accommodation: 0, transport: 10.00, play: 80.00, food: 40.00, shopping: 60.00, notes: "" },
+                    { title: "3月20日 - 德累斯顿", details: "交通: 🚌 市内交通\n 游览计划: 📌 德累斯顿：办公室，星巴克，购物\n 购物清单: 暂无", accommodation: 0, transport: 10.00, play: 80.00, food: 40.00, shopping: 260.00, notes: "" },
+                    { title: "3月21日 - 德累斯顿 → 柏林", details: "交通:  🚌 FLIXBUS 德累斯顿Hbf前往柏林BER 7:50-10:00（2小时10分钟）\n 游览计划: 无\n 购物清单: 无", accommodation: 0, transport: 40.00, play: 0, food: 20.00, shopping: 30.00, notes: "" }
+                ];
+                localStorage.setItem('travelData', JSON.stringify(activities));
+            }
+
+            // 清空旧数据，重新加载
+            document.getElementById("activities").innerHTML = "";
+            activities.forEach(activity => {
+                addActivity(activity.title, activity.details, activity.accommodation, activity.transport, activity.play, activity.food, activity.shopping, activity.notes);
+            });
+
+            updateTotalExpense();
+
+            let todos = JSON.parse(localStorage.getItem('todoList')) || [];
+            let shoppingList = JSON.parse(localStorage.getItem('shoppingList')) || [];
+            updateList('todo-list', todos);
+            updateList('shopping-list', shoppingList);
+        }
+
+        // 添加行程活动
+        function addActivity(title, details, accommodation = 0, transport = 0, play = 0, food = 0, shopping = 0, notes = "") {
+            let container = document.getElementById("activities");
+            let newActivity = document.createElement("div");
+            newActivity.classList.add("day");
+            newActivity.innerHTML = `
+                <h3>${title}</h3>
+                <p class="details">${details.replace(/\n/g, '<br>')}</p>
+                <div class="expense-category">
+                    <label>住宿:</label>
+                    <input type="number" class="accommodation-input" value="${accommodation}" onchange="updateTotalExpense()"> €
+                </div>
+                <div class="expense-category">
+                    <label>交通:</label>
+                    <input type="number" class="transport-input" value="${transport}" onchange="updateTotalExpense()"> €
+                </div>
+                <div class="expense-category">
+                    <label>游玩:</label>
+                    <input type="number" class="play-input" value="${play}" onchange="updateTotalExpense()"> €
+                </div>
+                <div class="expense-category">
+                    <label>饮食:</label>
+                    <input type="number" class="food-input" value="${food}" onchange="updateTotalExpense()"> €
+                </div>
+                <div class="expense-category">
+                    <label>购物:</label>
+                    <input type="number" class="shopping-input" value="${shopping}" onchange="updateTotalExpense()"> €
+                </div>
+                <div class="notes" contenteditable="true" style="margin-top:10px; padding:5px; border:1px solid #ccc; background:#f9f9f9;">${notes}</div>
+            `;
+            container.appendChild(newActivity);
+        }
+
+        function updateList(id, items) {
+            let list = document.getElementById(id);
+            list.innerHTML = '';
+            items.forEach(item => {
+                let li = document.createElement('li');
+                let checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = item.checked;
+                li.appendChild(checkbox);
+                li.appendChild(document.createTextNode(item.text));
+                list.appendChild(li);
+            });
+        }
+
+        function addItem(id) {
+            let input = document.getElementById(id + '-input');
+            let list = document.getElementById(id);
+            if (input.value.trim() !== "") {
+                let li = document.createElement('li');
+                let checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                li.appendChild(checkbox);
+                li.appendChild(document.createTextNode(input.value));
+                list.appendChild(li);
+                input.value = "";
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            initMap();
+            loadData(); // 直接加载数据
+        };
+    </script>
+</head>
+<body>
+    <h1>德国土耳其奥地利捷克旅行行程单（2025年3月9日 - 2025年3月21日）</h1>
+    <div id="map"></div>
+    <h2>代办事宜</h2>
+    <input type="text" id="todo-list-input" placeholder="输入代办事项...">
+    <button onclick="addItem('todo-list')">添加</button>
+    <ul id="todo-list"></ul>
+
+    <h2>购物清单</h2>
+    <input type="text" id="shopping-list-input" placeholder="输入购物项目...">
+    <button onclick="addItem('shopping-list')">添加</button>
+    <ul id="shopping-list"></ul>
+
+    <h2>每日行程</h2>
+    <div id="activities"></div>
+
+    <h2>💰 总支出</h2>
+    <p id="total-expense">总支出: €0.00</p>
+</body>
+</html>
